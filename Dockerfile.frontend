@@ -1,11 +1,31 @@
-FROM node:18-alpine
+# Stage 1: Build der Anwendung
+FROM node:18-alpine as build
 
 WORKDIR /app
 
-COPY package.json ./
+# Kopiere die package.json und package-lock.json (falls vorhanden)
+COPY package*.json ./
+
+# Installiere Abhängigkeiten
 RUN npm install
 
+# Kopiere den gesamten Quellcode in den Container
 COPY . .
 
-EXPOSE 3000
-CMD ["npm", "start"]
+# Baue die React-Anwendung (Output wird typischerweise in den Ordner "build" geschrieben)
+RUN npm run build
+
+# Stage 2: Auslieferung mit Nginx
+FROM nginx:alpine
+
+# Entferne den Standard-Nginx-Content
+RUN rm -rf /usr/share/nginx/html/*
+
+# Kopiere den Build-Output aus der vorherigen Stage in das Nginx-HTML-Verzeichnis
+COPY --from=build /app/build /usr/share/nginx/html
+
+# Exponiere Port 80
+EXPOSE 80
+
+# Starte Nginx im Vordergrund
+CMD ["nginx", "-g", "daemon off;"]
