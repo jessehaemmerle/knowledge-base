@@ -1,0 +1,26 @@
+/* Global Styles für das Wiki */
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    background-color: #f9f9f9;
+    color: #333;
+  }
+  
+  a {
+    color: #007BFF;
+    text-decoration: none;
+  }
+  
+  a:hover {
+    text-decoration: underline;
+  }
+  
+  /* Container für Deine Anwendung */
+  #root {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  
