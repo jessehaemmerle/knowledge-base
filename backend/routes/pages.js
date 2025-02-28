@@ -6,7 +6,7 @@ const SECRET_KEY = 'dein_geheimes_schluessel';
 
 // Dummy-Datenbank (später durch ein echtes DB-Modell ersetzen)
 let pages = [
-  { id: 1, title: 'Startseite', content: 'Willkommen in der Knowledge Base', tags: ['allgemein'], parentId: null }
+  { id: 1, title: 'Startseite', content: 'Willkommen in der Knowledge Base', tags: ['allgemein'], parentId: null, versions: [] }
 ];
 
 // Middleware zum Überprüfen des Tokens und der Rechte
@@ -46,19 +46,29 @@ router.post('/', authenticate, (req, res) => {
     title: req.body.title,
     content: req.body.content,
     tags: req.body.tags || [],
-    parentId: req.body.parentId || null
+    parentId: req.body.parentId || null,
+    versions: [] // Versionshistorie
   };
   pages.push(newPage);
   res.status(201).json(newPage);
 });
 
-// Seite aktualisieren
+// Seite aktualisieren mit Versionierung
 router.put('/:id', authenticate, (req, res) => {
   if (!['admin', 'editor'].includes(req.user.role)) {
     return res.status(403).json({ message: 'Keine Berechtigung' });
   }
   const pageIndex = pages.findIndex(p => p.id == req.params.id);
   if (pageIndex > -1) {
+    // Alte Version speichern
+    const oldVersion = {
+      title: pages[pageIndex].title,
+      content: pages[pageIndex].content,
+      tags: pages[pageIndex].tags,
+      updatedAt: new Date()
+    };
+    pages[pageIndex].versions.push(oldVersion);
+    // Aktualisieren
     pages[pageIndex] = { ...pages[pageIndex], ...req.body };
     res.json(pages[pageIndex]);
   } else {

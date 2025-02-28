@@ -2,11 +2,12 @@ import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import PageList from './components/PageList';
 import PageEditor from './components/PageEditor';
+import PageDetail from './components/PageDetail';
+import Register from './components/Register';
 import { login } from './api';
 
 function App() {
   const [token, setToken] = useState(null);
-  const [user, setUser] = useState(null);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -14,8 +15,6 @@ function App() {
     try {
       const data = await login(username.value, password.value);
       setToken(data.token);
-      // Benutzerinformationen können aus dem Token geparst werden
-      setUser({ username: username.value });
     } catch (error) {
       alert('Anmeldung fehlgeschlagen');
     }
@@ -24,7 +23,7 @@ function App() {
   return (
     <Router>
       <nav>
-        <Link to="/">Seiten</Link> | <Link to="/editor">Neuer Eintrag</Link>
+        <Link to="/">Seiten</Link> | <Link to="/editor">Neuer Eintrag</Link> | <Link to="/register">Registrieren</Link>
       </nav>
       {!token ? (
         <form onSubmit={handleLogin}>
@@ -41,6 +40,8 @@ function App() {
         <Routes>
           <Route path="/" element={<PageList />} />
           <Route path="/editor" element={<PageEditor token={token} />} />
+          <Route path="/page/:id" element={<PageDetail />} />
+          <Route path="/register" element={<Register />} />
         </Routes>
       )}
     </Router>
