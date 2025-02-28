@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Knowledge Base</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- Header-Bereich mit Logo und Navigation -->
+  <header>
+    <div class="logo">Knowledge Base</div>
+    <nav>
+      <ul>
+        <li><a href="#" id="home-link">Home</a></li>
+        <li><a href="#" id="new-page-link">Neue Seite</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <!-- Container mit Sidebar (Areas) und Hauptinhalt (Pages) -->
+  <div class="container">
+    <aside class="sidebar">
+      <h2>Bereiche</h2>
+      <ul id="area-list">
+        <!-- Dynamisch geladene Areas -->
+      </ul>
+    </aside>
+    <main class="content">
+      <div id="content-area">
+        <!-- Dynamisch geladene Seiten werden hier dargestellt -->
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal für das Erstellen/Bearbeiten einer Seite (Beispiel für WYSIWYG-Editor Integration) -->
+  <div id="editor-modal" class="modal hidden">
+    <div class="modal-content">
+      <span id="close-modal" class="close">&times;</span>
+      <h2>Neue Seite erstellen</h2>
+      <form id="page-form">
+        <label for="page-title">Titel:</label>
+        <input type="text" id="page-title" name="title" required>
+        
+        <label for="page-content">Inhalt:</label>
+        <!-- contenteditable-Div als einfacher WYSIWYG-Editor -->
+        <div id="page-content" contenteditable="true" class="editor"></div>
+        
+        <label for="area-select">Bereich:</label>
+        <select id="area-select" name="area_id">
+          <option value="">-- Kein Bereich --</option>
+          <!-- Dynamisch geladene Areas als Auswahloptionen -->
+        </select>
+        
+        <button type="submit">Seite speichern</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>

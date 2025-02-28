@@ -1,0 +1,149 @@
+/* Grundlegende Resets und Basis-Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  
+  body {
+    font-family: Arial, sans-serif;
+    line-height: 1.6;
+    background-color: #f4f4f4;
+    color: #333;
+  }
+  
+  /* Header-Styles */
+  header {
+    background-color: #3498db;
+    color: #fff;
+    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  header .logo {
+    font-size: 1.5rem;
+    font-weight: bold;
+  }
+  
+  header nav ul {
+    list-style: none;
+    display: flex;
+  }
+  
+  header nav ul li {
+    margin-left: 1rem;
+  }
+  
+  header nav ul li a {
+    color: #fff;
+    text-decoration: none;
+  }
+  
+  /* Container mit Sidebar und Content */
+  .container {
+    display: grid;
+    grid-template-columns: 250px 1fr;
+    gap: 1rem;
+    padding: 1rem;
+  }
+  
+  /* Sidebar */
+  .sidebar {
+    background-color: #fff;
+    padding: 1rem;
+    border-radius: 4px;
+    box-shadow: 0 0 5px rgba(0,0,0,0.1);
+  }
+  
+  .sidebar h2 {
+    margin-bottom: 1rem;
+  }
+  
+  .sidebar ul {
+    list-style: none;
+  }
+  
+  .sidebar ul li {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #eaeaea;
+  }
+  
+  /* Content */
+  .content {
+    background-color: #fff;
+    padding: 1rem;
+    border-radius: 4px;
+    box-shadow: 0 0 5px rgba(0,0,0,0.1);
+  }
+  
+  /* Modal (für WYSIWYG-Editor und Formular) */
+  .modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .modal.hidden {
+    display: none;
+  }
+  
+  .modal-content {
+    background: #fff;
+    padding: 1rem;
+    width: 90%;
+    max-width: 600px;
+    border-radius: 4px;
+    position: relative;
+  }
+  
+  .modal-content h2 {
+    margin-bottom: 1rem;
+  }
+  
+  .modal-content label {
+    display: block;
+    margin-top: 0.5rem;
+  }
+  
+  .modal-content input[type="text"],
+  .modal-content select {
+    width: 100%;
+    padding: 0.5rem;
+    margin-bottom: 1rem;
+  }
+  
+  .modal-content .editor {
+    width: 100%;
+    height: 200px;
+    padding: 0.5rem;
+    border: 1px solid #ccc;
+    margin-bottom: 1rem;
+    overflow-y: auto;
+  }
+  
+  .modal-content button {
+    background: #3498db;
+    color: #fff;
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
+  /* Schließen-Button */
+  .close {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 1.5rem;
+    cursor: pointer;
+  }
+  
