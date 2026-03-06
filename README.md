@@ -35,6 +35,8 @@ Dort legst du den ersten Benutzer an. Dieser wird automatisch `admin`.
 - `php` (php-fpm): API-Backend
 - `db` (mariadb): persistente Datenbank
 
+Hinweis: Frontend und Backend werden in die Container-Images kopiert (keine Runtime-Bind-Mounts). Das ist fuer Serverbetrieb robuster.
+
 ## Wichtige Endpunkte
 - `GET /api/setup/status`
 - `POST /api/setup/initialize`
