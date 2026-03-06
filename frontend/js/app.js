@@ -94,7 +94,8 @@ function bindEvents() {
 
   qs('new-page-btn').addEventListener('click', () => openPageModal());
   qs('new-area-btn').addEventListener('click', () => openAreaModal());
-  qs('cancel-page-btn').addEventListener('click', closePageModal);
+  qs('cancel-page-btn').addEventListener('click', closePageEditor);
+  qs('cancel-page-btn-bottom').addEventListener('click', closePageEditor);
   qs('cancel-area-btn').addEventListener('click', closeAreaModal);
 
   qs('page-form').addEventListener('submit', onPageSubmit);
@@ -116,6 +117,16 @@ function bindEvents() {
       qs('search-input').focus();
     }
   });
+}
+
+function showEditorView() {
+  qs('workspace').classList.add('hidden');
+  qs('page-editor-view').classList.remove('hidden');
+}
+
+function closePageEditor() {
+  qs('page-editor-view').classList.add('hidden');
+  qs('workspace').classList.remove('hidden');
 }
 
 function initQuillEditor() {
@@ -376,6 +387,7 @@ async function onLogin(event) {
 async function onLogout() {
   await request('/auth/logout', { method: 'POST' });
   state.user = null;
+  closePageEditor();
   showLogin();
 }
 
@@ -543,7 +555,7 @@ function deletePage(pageId) {
 function openPageModal(page = null) {
   if (state.user.role === 'viewer') return alert('Keine Berechtigung zum Bearbeiten.');
 
-  qs('page-modal-title').textContent = page ? 'Seite bearbeiten' : 'Neue Seite';
+  qs('page-editor-title').textContent = page ? 'Seite bearbeiten' : 'Neue Seite erstellen';
   qs('page-id').value = page ? page.id : '';
   qs('page-title').value = page?.title || '';
   qs('page-slug').value = page?.slug || '';
@@ -554,10 +566,9 @@ function openPageModal(page = null) {
   qs('page-note').value = '';
   qs('page-area').value = page?.area_id || '';
   populateParentOptions(page);
-  qs('page-modal').classList.remove('hidden');
+  showEditorView();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
-
-function closePageModal() { qs('page-modal').classList.add('hidden'); }
 
 async function onPageSubmit(event) {
   event.preventDefault();
@@ -588,7 +599,7 @@ async function onPageSubmit(event) {
       state.selectedPageId = created.id;
     }
 
-    closePageModal();
+    closePageEditor();
     await Promise.all([loadNavPages(), loadPages(), loadDashboard()]);
     if (state.selectedPageId) await selectPage(state.selectedPageId);
   } catch (error) {

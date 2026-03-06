@@ -149,6 +149,16 @@ button:disabled {
   padding: 0 1rem 1rem;
 }
 
+.editor-view {
+  margin: 0 1rem 1rem;
+}
+
+.editor-view form {
+  display: grid;
+  gap: 0.55rem;
+  margin-top: 0.8rem;
+}
+
 .panel {
   padding: 1rem;
 }

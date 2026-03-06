@@ -57,7 +57,7 @@
 
     <section id="dashboard" class="dashboard"></section>
 
-    <div class="workspace">
+    <div id="workspace" class="workspace">
       <aside class="panel nav-panel">
         <h2>Navigation</h2>
         <div class="quick-nav">
@@ -104,11 +104,12 @@
         <div id="page-details" class="muted">Waehle eine Seite aus.</div>
       </section>
     </div>
-  </div>
 
-  <div id="page-modal" class="modal hidden">
-    <div class="modal-content">
-      <h2 id="page-modal-title">Neue Seite</h2>
+    <section id="page-editor-view" class="panel editor-view hidden">
+      <div class="panel-head">
+        <h2 id="page-editor-title">Seite bearbeiten</h2>
+        <button type="button" id="cancel-page-btn" class="ghost">Zurueck</button>
+      </div>
       <form id="page-form">
         <input type="hidden" id="page-id">
         <label for="page-title">Titel</label>
@@ -134,10 +135,10 @@
         <div id="page-content-editor" class="quill-editor"></div>
         <div class="actions">
           <button type="submit">Speichern</button>
-          <button type="button" id="cancel-page-btn" class="ghost">Abbrechen</button>
+          <button type="button" id="cancel-page-btn-bottom" class="ghost">Abbrechen</button>
         </div>
       </form>
-    </div>
+    </section>
   </div>
 
   <div id="area-modal" class="modal hidden">
