@@ -12,6 +12,7 @@ const state = {
     status: '',
   },
 };
+let quill = null;
 
 async function request(path, options = {}) {
   const response = await fetch(`${API_BASE}${path}`, {
@@ -107,6 +108,7 @@ function bindEvents() {
   qs('nav-all').addEventListener('click', () => applyQuickNav(''));
   qs('nav-drafts').addEventListener('click', () => applyQuickNav('draft'));
   qs('nav-published').addEventListener('click', () => applyQuickNav('published'));
+  initQuillEditor();
 
   document.addEventListener('keydown', (event) => {
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
@@ -114,6 +116,47 @@ function bindEvents() {
       qs('search-input').focus();
     }
   });
+}
+
+function initQuillEditor() {
+  if (quill !== null) return;
+  if (typeof Quill === 'undefined') {
+    alert('Der WYSIWYG-Editor konnte nicht geladen werden. Bitte Internetzugriff auf cdn.jsdelivr.net pruefen.');
+    return;
+  }
+
+  quill = new Quill('#page-content-editor', {
+    theme: 'snow',
+    placeholder: 'Schreibe den Seiteninhalt...',
+    modules: {
+      toolbar: [
+        ['bold', 'italic', 'underline'],
+        [{ header: [2, 3, false] }],
+        [{ list: 'ordered' }, { list: 'bullet' }],
+        ['blockquote', 'code-block', 'link'],
+        ['clean'],
+      ],
+    },
+  });
+}
+
+function getEditorHtml() {
+  if (!quill) return '';
+  return quill.root.innerHTML.trim();
+}
+
+function setEditorHtml(html) {
+  if (!quill) return;
+  if (html && html.trim()) {
+    quill.root.innerHTML = html;
+  } else {
+    quill.setText('');
+  }
+}
+
+function editorHasText() {
+  if (!quill) return false;
+  return quill.getText().trim().length > 0;
 }
 
 function applyQuickNav(status) {
@@ -507,7 +550,7 @@ function openPageModal(page = null) {
   qs('page-summary').value = page?.summary || '';
   qs('page-status').value = page?.status || 'draft';
   qs('page-public').checked = page ? page.is_public === 1 : true;
-  qs('page-content').value = page?.content || '';
+  setEditorHtml(page?.content || '');
   qs('page-note').value = '';
   qs('page-area').value = page?.area_id || '';
   populateParentOptions(page);
@@ -529,8 +572,12 @@ async function onPageSubmit(event) {
     status: qs('page-status').value,
     is_public: qs('page-public').checked,
     note: qs('page-note').value.trim(),
-    content: qs('page-content').value,
+    content: getEditorHtml(),
   };
+
+  if (!editorHasText()) {
+    return alert('Bitte Inhalt fuer die Seite eingeben.');
+  }
 
   try {
     if (pageId) {
