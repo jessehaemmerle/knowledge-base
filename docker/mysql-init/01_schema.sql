@@ -61,3 +61,13 @@ CREATE TABLE IF NOT EXISTS page_versions (
   CONSTRAINT fk_versions_user FOREIGN KEY (edited_by) REFERENCES users(id),
   INDEX idx_versions_page_date (page_id, edited_at)
 );
+
+CREATE TABLE IF NOT EXISTS user_page_favorites (
+  user_id INT UNSIGNED NOT NULL,
+  page_id INT UNSIGNED NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (user_id, page_id),
+  CONSTRAINT fk_fav_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_fav_page FOREIGN KEY (page_id) REFERENCES pages(id) ON DELETE CASCADE,
+  INDEX idx_fav_created (created_at)
+);

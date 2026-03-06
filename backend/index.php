@@ -17,6 +17,10 @@ $router->add('GET', '/api/auth/me', 'AuthController@me');
 $router->add('POST', '/api/auth/logout', 'AuthController@logout');
 
 $router->add('GET', '/api/dashboard/stats', 'DashboardController@stats');
+ 
+$router->add('GET', '/api/favorites', 'FavoritesController@listFavorites');
+$router->add('POST', '/api/favorites/{pageId}', 'FavoritesController@addFavorite');
+$router->add('DELETE', '/api/favorites/{pageId}', 'FavoritesController@removeFavorite');
 
 $router->add('GET', '/api/areas', 'AreasController@listAreas');
 $router->add('GET', '/api/areas/{id}', 'AreasController@getArea');

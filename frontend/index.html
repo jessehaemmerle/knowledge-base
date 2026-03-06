@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Knowledge Base Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
   <link href="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.snow.css" rel="stylesheet">
 </head>
@@ -43,39 +46,58 @@
   </div>
 
   <div id="app-view" class="hidden">
-    <header class="topbar">
-      <div>
-        <h1>Knowledge Base Wiki</h1>
-        <p id="welcome-user"></p>
+    <header class="cf-header">
+      <div class="brand">
+        <div class="brand-mark">KB</div>
+        <div>
+          <strong>Knowledge Base</strong>
+          <div class="muted small" id="welcome-user"></div>
+        </div>
+      </div>
+      <div class="header-search">
+        <input id="search-input" type="text" placeholder="Suche in Seiten... (Ctrl/Cmd+K)">
       </div>
       <div class="actions">
-        <button id="new-page-btn">Neue Seite</button>
-        <button id="new-area-btn">Neuer Bereich</button>
+        <button id="new-page-btn">Erstellen</button>
+        <button id="new-area-btn" class="ghost">Bereich</button>
         <button id="logout-btn" class="ghost">Logout</button>
       </div>
     </header>
 
     <section id="dashboard" class="dashboard"></section>
 
-    <div id="workspace" class="workspace">
-      <aside class="panel nav-panel">
-        <h2>Navigation</h2>
-        <div class="quick-nav">
-          <button id="nav-all" class="ghost">Alle Seiten</button>
-          <button id="nav-drafts" class="ghost">Drafts</button>
-          <button id="nav-published" class="ghost">Published</button>
-        </div>
-
-        <h3>Bereiche</h3>
+    <div id="workspace" class="cf-layout">
+      <aside class="cf-sidebar panel">
+        <h2>Spaces</h2>
         <ul id="area-nav-list" class="area-nav"></ul>
 
         <h3>Seitenbaum</h3>
         <div id="page-tree" class="page-tree"></div>
+      </aside>
 
-        <h3>Suche & Filter</h3>
-        <label for="search-input">Suche (Ctrl/Cmd+K)</label>
-        <input id="search-input" type="text" placeholder="Titel, Inhalt, Zusammenfassung">
+      <main class="cf-main panel">
+        <div id="breadcrumb" class="breadcrumb">Home</div>
+        <div id="space-home" class="space-home muted">Waehle einen Space oder eine Seite aus.</div>
+        <div id="page-details" class="page-content muted">Waehle eine Seite aus.</div>
 
+        <section class="recent-block">
+          <div class="panel-head">
+            <h2>Zuletzt aktualisiert</h2>
+            <span id="pages-count" class="meta"></span>
+          </div>
+          <div id="page-list" class="page-list"></div>
+        </section>
+      </main>
+
+      <aside class="cf-context panel">
+        <h2>Navigation</h2>
+        <div class="quick-nav">
+          <button id="nav-all" class="ghost">Alle</button>
+          <button id="nav-drafts" class="ghost">Drafts</button>
+          <button id="nav-published" class="ghost">Published</button>
+        </div>
+
+        <h3>Filter</h3>
         <label for="area-filter">Bereich</label>
         <select id="area-filter"></select>
 
@@ -87,22 +109,14 @@
           <option value="archived">Archived</option>
         </select>
 
-        <button id="apply-filter-btn">Anwenden</button>
+        <button id="apply-filter-btn">Filter anwenden</button>
+
+        <h3>Favoriten</h3>
+        <div id="favorites-list" class="mini-list muted">Keine Favoriten.</div>
+
+        <h3>Zuletzt gesehen</h3>
+        <div id="recent-pages-list" class="mini-list muted">Noch keine zuletzt gesehenen Seiten.</div>
       </aside>
-
-      <main class="panel main-panel">
-        <div class="panel-head">
-          <h2>Seiten</h2>
-          <span id="pages-count" class="meta"></span>
-        </div>
-        <div id="page-list" class="page-list"></div>
-      </main>
-
-      <section class="panel detail-panel">
-        <div id="breadcrumb" class="breadcrumb">Home</div>
-        <h2>Details</h2>
-        <div id="page-details" class="muted">Waehle eine Seite aus.</div>
-      </section>
     </div>
 
     <section id="page-editor-view" class="panel editor-view hidden">

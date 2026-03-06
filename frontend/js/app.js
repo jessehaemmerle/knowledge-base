@@ -11,6 +11,9 @@ const state = {
     area_id: '',
     status: '',
   },
+  collapsedTreeNodes: new Set(),
+  favorites: [],
+  recentPages: [],
 };
 let quill = null;
 
@@ -50,6 +53,99 @@ function escapeHtml(text) {
 
 function setVisible(elementId, visible) { qs(elementId).classList.toggle('hidden', !visible); }
 
+function recentStorageKey() {
+  return state.user ? `kb_recent_pages_${state.user.id}` : 'kb_recent_pages';
+}
+
+function loadRecentPagesFromStorage() {
+  try {
+    const raw = localStorage.getItem(recentStorageKey());
+    state.recentPages = raw ? JSON.parse(raw) : [];
+  } catch (_) {
+    state.recentPages = [];
+  }
+}
+
+function persistRecentPages() {
+  localStorage.setItem(recentStorageKey(), JSON.stringify(state.recentPages.slice(0, 15)));
+}
+
+function addRecentPage(page) {
+  const entry = { id: page.id, title: page.title, area_name: page.area_name || '' };
+  state.recentPages = [entry].concat(state.recentPages.filter((p) => p.id !== page.id)).slice(0, 15);
+  persistRecentPages();
+  renderRecentPages();
+}
+
+function isFavorite(pageId) {
+  return state.favorites.some((f) => Number(f.id) === Number(pageId));
+}
+
+function renderFavorites() {
+  const container = qs('favorites-list');
+  if (!state.favorites.length) {
+    container.innerHTML = '<div class="muted">Keine Favoriten.</div>';
+    return;
+  }
+
+  container.innerHTML = state.favorites
+    .map((item) => `<div class="mini-item" data-fav-id="${item.id}">${escapeHtml(item.title)}</div>`)
+    .join('');
+
+  Array.from(container.querySelectorAll('.mini-item')).forEach((node) => {
+    node.addEventListener('click', () => selectPage(Number(node.dataset.favId)));
+  });
+}
+
+function renderRecentPages() {
+  const container = qs('recent-pages-list');
+  if (!state.recentPages.length) {
+    container.innerHTML = '<div class="muted">Noch keine zuletzt gesehenen Seiten.</div>';
+    return;
+  }
+
+  container.innerHTML = state.recentPages
+    .map((item) => `<div class="mini-item" data-recent-id="${item.id}">${escapeHtml(item.title)}</div>`)
+    .join('');
+
+  Array.from(container.querySelectorAll('.mini-item')).forEach((node) => {
+    node.addEventListener('click', () => selectPage(Number(node.dataset.recentId)));
+  });
+}
+
+function renderSpaceHome() {
+  const spaceHome = qs('space-home');
+  const details = qs('page-details');
+  const areaId = state.filter.area_id;
+
+  if (state.selectedPageId) {
+    spaceHome.classList.add('hidden');
+    details.classList.remove('hidden');
+    return;
+  }
+
+  details.classList.add('hidden');
+  spaceHome.classList.remove('hidden');
+
+  if (!areaId) {
+    spaceHome.innerHTML = '<h3>Willkommen</h3><p>Waehle links einen Space oder eine Seite. Du kannst auch die Suche oben verwenden.</p>';
+    return;
+  }
+
+  const area = state.areas.find((a) => String(a.id) === String(areaId));
+  const roots = state.navPages.filter((p) => String(p.area_id) === String(areaId) && !p.parent_id);
+  const rootList = roots.length
+    ? `<ul>${roots.slice(0, 8).map((p) => `<li>${escapeHtml(p.title)}</li>`).join('')}</ul>`
+    : '<p>Noch keine Root-Seiten in diesem Space.</p>';
+
+  spaceHome.innerHTML = `
+    <h3>${escapeHtml(area ? area.name : 'Space')}</h3>
+    <p>${escapeHtml(area?.description || 'Space-Startseite')}</p>
+    <p><strong>Root-Seiten:</strong></p>
+    ${rootList}
+  `;
+}
+
 async function boot() {
   bindEvents();
   try {
@@ -84,6 +180,7 @@ function showApp() {
   setVisible('setup-view', false);
   setVisible('login-view', false);
   setVisible('app-view', true);
+  closePageEditor();
   qs('welcome-user').textContent = `Angemeldet als ${state.user.display_name} (${state.user.role})`;
 }
 
@@ -224,18 +321,40 @@ function renderPageTree() {
 
   const rows = [];
   const walk = (node, depth) => {
+    const hasChildren = node.children.length > 0;
+    const collapsed = state.collapsedTreeNodes.has(node.id);
+    const toggleChar = collapsed ? '+' : '-';
+
     rows.push(`
-      <div class="tree-row ${node.id === state.selectedPageId ? 'active' : ''}" data-page-id="${node.id}" style="padding-left:${depth * 14 + 8}px;">
-        ${escapeHtml(node.title)}
+      <div class="tree-row" style="padding-left:${depth * 14 + 4}px;" data-page-id="${node.id}">
+        <button type="button" class="tree-toggle ${hasChildren ? '' : 'empty'}" data-toggle-id="${node.id}">${hasChildren ? toggleChar : ''}</button>
+        <div class="tree-title ${node.id === state.selectedPageId ? 'active' : ''}" data-title-id="${node.id}" title="${escapeHtml(node.title)}">${escapeHtml(node.title)}</div>
       </div>
     `);
-    node.children.forEach((child) => walk(child, depth + 1));
+    if (!collapsed) {
+      node.children.forEach((child) => walk(child, depth + 1));
+    }
   };
   roots.forEach((root) => walk(root, 0));
 
   container.innerHTML = rows.join('');
-  Array.from(container.querySelectorAll('.tree-row')).forEach((row) => {
-    row.addEventListener('click', () => selectPage(Number(row.dataset.pageId)));
+
+  Array.from(container.querySelectorAll('.tree-toggle')).forEach((button) => {
+    if (button.classList.contains('empty')) return;
+    button.addEventListener('click', (event) => {
+      event.stopPropagation();
+      const id = Number(button.dataset.toggleId);
+      if (state.collapsedTreeNodes.has(id)) {
+        state.collapsedTreeNodes.delete(id);
+      } else {
+        state.collapsedTreeNodes.add(id);
+      }
+      renderPageTree();
+    });
+  });
+
+  Array.from(container.querySelectorAll('.tree-title')).forEach((title) => {
+    title.addEventListener('click', () => selectPage(Number(title.dataset.titleId)));
   });
 }
 
@@ -259,6 +378,7 @@ function renderAreaNav() {
       await Promise.all([loadNavPages(), loadPages()]);
       setBreadcrumb();
       renderAreaNav();
+      renderSpaceHome();
     });
   });
 }
@@ -387,15 +507,25 @@ async function onLogin(event) {
 async function onLogout() {
   await request('/auth/logout', { method: 'POST' });
   state.user = null;
+  state.favorites = [];
+  state.recentPages = [];
   closePageEditor();
   showLogin();
+}
+
+async function loadFavorites() {
+  state.favorites = await request('/favorites');
+  renderFavorites();
 }
 
 async function loadApp() {
   showApp();
   updateQuickNavButtons();
-  await Promise.all([loadAreas(), loadNavPages(), loadPages(), loadDashboard()]);
+  loadRecentPagesFromStorage();
+  renderRecentPages();
+  await Promise.all([loadAreas(), loadNavPages(), loadPages(), loadDashboard(), loadFavorites()]);
   setBreadcrumb();
+  renderSpaceHome();
 }
 
 async function loadDashboard() {
@@ -445,6 +575,7 @@ async function loadPages() {
       state.selectedPageId = null;
       qs('page-details').innerHTML = '<p class="muted">Waehle eine Seite aus.</p>';
       setBreadcrumb();
+      renderSpaceHome();
     }
   }
 }
@@ -476,6 +607,7 @@ async function selectPage(pageId) {
   state.selectedPageId = pageId;
   renderPageList();
   renderPageTree();
+  renderSpaceHome();
 
   const [page, versions] = await Promise.all([request(`/pages/${pageId}`), request(`/pages/${pageId}/versions`)]);
 
@@ -487,6 +619,7 @@ async function selectPage(pageId) {
 
   const canEdit = state.user.role === 'admin' || state.user.role === 'editor';
   const canDelete = state.user.role === 'admin';
+  const favLabel = isFavorite(page.id) ? 'Unstar' : 'Star';
 
   qs('page-details').innerHTML = `
     <h3>${escapeHtml(page.title)}</h3>
@@ -501,6 +634,7 @@ async function selectPage(pageId) {
     </div>
 
     <div class="actions" style="margin-top: 0.8rem;">
+      <button id="favorite-page-btn" class="ghost">${favLabel}</button>
       ${canEdit ? '<button id="edit-page-btn">Bearbeiten</button>' : ''}
       ${canDelete ? '<button id="delete-page-btn" class="danger">Loeschen</button>' : ''}
     </div>
@@ -522,6 +656,7 @@ async function selectPage(pageId) {
 
   if (canPrev) qs('prev-page-btn').addEventListener('click', () => selectPage(state.pages[currentIndex - 1].id));
   if (canNext) qs('next-page-btn').addEventListener('click', () => selectPage(state.pages[currentIndex + 1].id));
+  qs('favorite-page-btn').addEventListener('click', () => toggleFavorite(page.id));
 
   if (canEdit) {
     qs('edit-page-btn').addEventListener('click', () => openPageModal(page));
@@ -531,6 +666,19 @@ async function selectPage(pageId) {
   }
 
   if (canDelete) qs('delete-page-btn').addEventListener('click', () => deletePage(page.id));
+  addRecentPage(page);
+}
+
+async function toggleFavorite(pageId) {
+  if (isFavorite(pageId)) {
+    await request(`/favorites/${pageId}`, { method: 'DELETE' });
+  } else {
+    await request(`/favorites/${pageId}`, { method: 'POST' });
+  }
+  await loadFavorites();
+  if (state.selectedPageId === pageId) {
+    await selectPage(pageId);
+  }
 }
 
 async function restoreVersion(pageId, versionNumber) {
@@ -546,8 +694,10 @@ function deletePage(pageId) {
     .then(async () => {
       state.selectedPageId = null;
       await Promise.all([loadNavPages(), loadPages(), loadDashboard()]);
+      await loadFavorites();
       qs('page-details').innerHTML = '<p class="muted">Waehle eine Seite aus.</p>';
       setBreadcrumb();
+      renderSpaceHome();
     })
     .catch((error) => alert(error.message));
 }
@@ -600,7 +750,7 @@ async function onPageSubmit(event) {
     }
 
     closePageEditor();
-    await Promise.all([loadNavPages(), loadPages(), loadDashboard()]);
+    await Promise.all([loadNavPages(), loadPages(), loadDashboard(), loadFavorites()]);
     if (state.selectedPageId) await selectPage(state.selectedPageId);
   } catch (error) {
     alert(error.message);
@@ -646,6 +796,7 @@ async function onApplyFilter() {
   renderAreaNav();
   setBreadcrumb();
   qs('page-details').innerHTML = '<p class="muted">Waehle eine Seite aus.</p>';
+  renderSpaceHome();
 }
 
 document.addEventListener('DOMContentLoaded', boot);

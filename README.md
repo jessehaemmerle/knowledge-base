@@ -8,6 +8,9 @@ Vollstaendige Wiki-Loesung mit:
 - Volltextsuche (Titel/Inhalt/Zusammenfassung)
 - Versionierung bei jeder Aenderung
 - Restore auf beliebige Versionen
+- Favoriten (`Starred`) pro Benutzer
+- Zuletzt gesehene Seiten pro Benutzer (lokal im Browser)
+- Space-Home-Ansicht pro Bereich
 - Dashboard mit Kennzahlen
 
 ## Tech-Stack
@@ -44,6 +47,9 @@ Hinweis: Frontend und Backend werden in die Container-Images kopiert (keine Runt
 - `GET /api/auth/me`
 - `POST /api/auth/logout`
 - `GET /api/dashboard/stats`
+- `GET /api/favorites`
+- `POST /api/favorites/{pageId}`
+- `DELETE /api/favorites/{pageId}`
 - `GET /api/areas`
 - `POST /api/areas`
 - `PUT /api/areas/{id}`
