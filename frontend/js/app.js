@@ -26,10 +26,23 @@ async function request(path, options = {}) {
     return null;
   }
 
-  const payload = await response.json();
-  if (!response.ok) {
-    throw new Error(payload.error || 'Request failed');
+  const raw = await response.text();
+  let payload = null;
+  if (raw) {
+    try {
+      payload = JSON.parse(raw);
+    } catch (_) {
+      payload = null;
+    }
   }
+
+  if (!response.ok) {
+    if (payload && payload.error) {
+      throw new Error(payload.error);
+    }
+    throw new Error(raw || 'Request failed');
+  }
+
   return payload;
 }
 
