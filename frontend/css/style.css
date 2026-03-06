@@ -24,6 +24,11 @@ h1, h2, h3 {
   margin: 0;
 }
 
+h3 {
+  font-size: 1rem;
+  margin: 0.9rem 0 0.55rem;
+}
+
 .screen {
   min-height: 100vh;
   display: grid;
@@ -77,8 +82,18 @@ button.ghost {
   color: var(--text);
 }
 
+button.ghost.active-nav {
+  background: var(--accent-soft);
+  border: 1px solid #a9c6f6;
+}
+
 button.danger {
   background: var(--danger);
+}
+
+button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .hidden {
@@ -129,7 +144,7 @@ button.danger {
 
 .workspace {
   display: grid;
-  grid-template-columns: 260px 1fr 420px;
+  grid-template-columns: 280px 1fr 420px;
   gap: 0.8rem;
   padding: 0 1rem 1rem;
 }
@@ -138,8 +153,62 @@ button.danger {
   padding: 1rem;
 }
 
-.panel h2 {
+.panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 0.8rem;
+}
+
+.quick-nav {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.area-nav {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.35rem;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.area-nav li {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.45rem 0.55rem;
+  cursor: pointer;
+}
+
+.area-nav li:hover,
+.area-nav li.active {
+  background: var(--accent-soft);
+  border-color: #a9c6f6;
+}
+
+.page-tree {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.5rem;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.tree-row {
+  border-radius: 6px;
+  padding: 0.3rem 0.45rem;
+  margin: 0.15rem 0;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tree-row:hover,
+.tree-row.active {
+  background: var(--accent-soft);
 }
 
 .page-list {
@@ -160,6 +229,12 @@ button.danger {
   border-color: #a9c6f6;
 }
 
+.breadcrumb {
+  color: var(--muted);
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+}
+
 .muted {
   color: var(--muted);
 }
@@ -173,6 +248,12 @@ button.danger {
   margin-top: 0.8rem;
   padding-top: 0.8rem;
   border-top: 1px solid var(--border);
+}
+
+.detail-nav {
+  display: flex;
+  gap: 0.45rem;
+  margin-top: 0.8rem;
 }
 
 .version-list {

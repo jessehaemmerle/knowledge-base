@@ -38,7 +38,7 @@ class Page {
             $where = 'WHERE ' . implode(' AND ', $conditions);
         }
 
-        $sql = "SELECT p.id, p.title, p.slug, p.summary, p.status, p.is_public, p.updated_at,
+        $sql = "SELECT p.id, p.area_id, p.parent_id, p.title, p.slug, p.summary, p.status, p.is_public, p.updated_at,
                        a.name AS area_name,
                        u.display_name AS updated_by_name
                 FROM pages p

@@ -14,16 +14,12 @@
       <form id="setup-form">
         <label for="setup-display-name">Anzeigename</label>
         <input id="setup-display-name" type="text" required>
-
         <label for="setup-username">Benutzername</label>
         <input id="setup-username" type="text" required>
-
         <label for="setup-password">Passwort</label>
         <input id="setup-password" type="password" required minlength="8">
-
         <label for="setup-password-confirm">Passwort bestaetigen</label>
         <input id="setup-password-confirm" type="password" required minlength="8">
-
         <button type="submit">Setup abschliessen</button>
       </form>
       <div id="setup-error" class="error hidden"></div>
@@ -61,9 +57,22 @@
     <section id="dashboard" class="dashboard"></section>
 
     <div class="workspace">
-      <aside class="panel">
-        <h2>Filter</h2>
-        <label for="search-input">Suche</label>
+      <aside class="panel nav-panel">
+        <h2>Navigation</h2>
+        <div class="quick-nav">
+          <button id="nav-all" class="ghost">Alle Seiten</button>
+          <button id="nav-drafts" class="ghost">Drafts</button>
+          <button id="nav-published" class="ghost">Published</button>
+        </div>
+
+        <h3>Bereiche</h3>
+        <ul id="area-nav-list" class="area-nav"></ul>
+
+        <h3>Seitenbaum</h3>
+        <div id="page-tree" class="page-tree"></div>
+
+        <h3>Suche & Filter</h3>
+        <label for="search-input">Suche (Ctrl/Cmd+K)</label>
         <input id="search-input" type="text" placeholder="Titel, Inhalt, Zusammenfassung">
 
         <label for="area-filter">Bereich</label>
@@ -81,11 +90,15 @@
       </aside>
 
       <main class="panel main-panel">
-        <h2>Seiten</h2>
+        <div class="panel-head">
+          <h2>Seiten</h2>
+          <span id="pages-count" class="meta"></span>
+        </div>
         <div id="page-list" class="page-list"></div>
       </main>
 
       <section class="panel detail-panel">
+        <div id="breadcrumb" class="breadcrumb">Home</div>
         <h2>Details</h2>
         <div id="page-details" class="muted">Waehle eine Seite aus.</div>
       </section>
@@ -97,34 +110,27 @@
       <h2 id="page-modal-title">Neue Seite</h2>
       <form id="page-form">
         <input type="hidden" id="page-id">
-
         <label for="page-title">Titel</label>
         <input id="page-title" type="text" required>
-
         <label for="page-slug">Slug</label>
         <input id="page-slug" type="text" placeholder="wird automatisch erzeugt">
-
         <label for="page-summary">Zusammenfassung</label>
         <textarea id="page-summary" rows="2"></textarea>
-
         <label for="page-area">Bereich</label>
         <select id="page-area"></select>
-
+        <label for="page-parent">Parent-Seite</label>
+        <select id="page-parent"></select>
         <label for="page-status">Status</label>
         <select id="page-status">
           <option value="draft">Draft</option>
           <option value="published">Published</option>
           <option value="archived">Archived</option>
         </select>
-
         <label><input id="page-public" type="checkbox" checked> Oeffentlich sichtbar</label>
-
         <label for="page-note">Aenderungsnotiz (optional)</label>
         <input id="page-note" type="text" maxlength="255">
-
         <label for="page-content">Inhalt (HTML erlaubt)</label>
         <textarea id="page-content" rows="10" required></textarea>
-
         <div class="actions">
           <button type="submit">Speichern</button>
           <button type="button" id="cancel-page-btn" class="ghost">Abbrechen</button>
@@ -139,13 +145,10 @@
       <form id="area-form">
         <label for="area-name">Name</label>
         <input id="area-name" type="text" required>
-
         <label for="area-slug">Slug</label>
         <input id="area-slug" type="text" placeholder="wird automatisch erzeugt">
-
         <label for="area-description">Beschreibung</label>
         <textarea id="area-description" rows="3"></textarea>
-
         <div class="actions">
           <button type="submit">Speichern</button>
           <button type="button" id="cancel-area-btn" class="ghost">Abbrechen</button>

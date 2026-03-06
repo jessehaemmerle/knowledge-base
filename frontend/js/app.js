@@ -4,6 +4,7 @@ const state = {
   user: null,
   areas: [],
   pages: [],
+  navPages: [],
   selectedPageId: null,
   filter: {
     q: '',
@@ -22,33 +23,23 @@ async function request(path, options = {}) {
     ...options,
   });
 
-  if (response.status === 204) {
-    return null;
-  }
+  if (response.status === 204) return null;
 
   const raw = await response.text();
   let payload = null;
   if (raw) {
-    try {
-      payload = JSON.parse(raw);
-    } catch (_) {
-      payload = null;
-    }
+    try { payload = JSON.parse(raw); } catch (_) { payload = null; }
   }
 
   if (!response.ok) {
-    if (payload && payload.error) {
-      throw new Error(payload.error);
-    }
+    if (payload && payload.error) throw new Error(payload.error);
     throw new Error(raw || 'Request failed');
   }
 
   return payload;
 }
 
-function qs(id) {
-  return document.getElementById(id);
-}
+function qs(id) { return document.getElementById(id); }
 
 function escapeHtml(text) {
   const div = document.createElement('div');
@@ -56,19 +47,13 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
-function setVisible(elementId, visible) {
-  qs(elementId).classList.toggle('hidden', !visible);
-}
+function setVisible(elementId, visible) { qs(elementId).classList.toggle('hidden', !visible); }
 
 async function boot() {
   bindEvents();
-
   try {
     const setup = await request('/setup/status');
-    if (setup.setup_required) {
-      showSetup();
-      return;
-    }
+    if (setup.setup_required) return showSetup();
 
     const me = await request('/auth/me');
     if (me.user) {
@@ -116,10 +101,180 @@ function bindEvents() {
 
   qs('apply-filter-btn').addEventListener('click', onApplyFilter);
   qs('search-input').addEventListener('keydown', (event) => {
-    if (event.key === 'Enter') {
-      onApplyFilter();
+    if (event.key === 'Enter') onApplyFilter();
+  });
+
+  qs('nav-all').addEventListener('click', () => applyQuickNav(''));
+  qs('nav-drafts').addEventListener('click', () => applyQuickNav('draft'));
+  qs('nav-published').addEventListener('click', () => applyQuickNav('published'));
+
+  document.addEventListener('keydown', (event) => {
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+      event.preventDefault();
+      qs('search-input').focus();
     }
   });
+}
+
+function applyQuickNav(status) {
+  state.filter.status = status;
+  state.filter.area_id = '';
+  qs('status-filter').value = status;
+  qs('area-filter').value = '';
+  updateQuickNavButtons();
+  onApplyFilter();
+}
+
+function updateQuickNavButtons() {
+  const mapping = { '': 'nav-all', draft: 'nav-drafts', published: 'nav-published' };
+  ['nav-all', 'nav-drafts', 'nav-published'].forEach((id) => qs(id).classList.remove('active-nav'));
+  qs(mapping[state.filter.status] || 'nav-all').classList.add('active-nav');
+}
+
+function buildNavQuery() {
+  const params = new URLSearchParams();
+  if (state.filter.area_id) params.set('area_id', state.filter.area_id);
+  if (state.filter.status) params.set('status', state.filter.status);
+  const query = params.toString();
+  return query ? `?${query}` : '';
+}
+
+async function loadNavPages() {
+  state.navPages = await request(`/pages${buildNavQuery()}`);
+  renderPageTree();
+}
+
+function renderPageTree() {
+  const container = qs('page-tree');
+  if (!state.navPages.length) {
+    container.innerHTML = '<div class="muted">Keine Seiten.</div>';
+    return;
+  }
+
+  const byId = new Map(state.navPages.map((p) => [p.id, { ...p, children: [] }]));
+  const roots = [];
+
+  byId.forEach((node) => {
+    if (node.parent_id && byId.has(node.parent_id) && node.parent_id !== node.id) {
+      byId.get(node.parent_id).children.push(node);
+    } else {
+      roots.push(node);
+    }
+  });
+
+  const sortNodes = (nodes) => {
+    nodes.sort((a, b) => a.title.localeCompare(b.title, 'de', { sensitivity: 'base' }));
+    nodes.forEach((n) => sortNodes(n.children));
+  };
+  sortNodes(roots);
+
+  const rows = [];
+  const walk = (node, depth) => {
+    rows.push(`
+      <div class="tree-row ${node.id === state.selectedPageId ? 'active' : ''}" data-page-id="${node.id}" style="padding-left:${depth * 14 + 8}px;">
+        ${escapeHtml(node.title)}
+      </div>
+    `);
+    node.children.forEach((child) => walk(child, depth + 1));
+  };
+  roots.forEach((root) => walk(root, 0));
+
+  container.innerHTML = rows.join('');
+  Array.from(container.querySelectorAll('.tree-row')).forEach((row) => {
+    row.addEventListener('click', () => selectPage(Number(row.dataset.pageId)));
+  });
+}
+
+function renderAreaNav() {
+  const list = qs('area-nav-list');
+  const allItemClass = state.filter.area_id === '' ? 'active' : '';
+  const items = [`<li class="${allItemClass}" data-area-id="">Alle Bereiche</li>`]
+    .concat(state.areas.map((area) => {
+      const isActive = String(area.id) === String(state.filter.area_id);
+      return `<li class="${isActive ? 'active' : ''}" data-area-id="${area.id}">${escapeHtml(area.name)}</li>`;
+    }))
+    .join('');
+
+  list.innerHTML = items;
+
+  Array.from(list.querySelectorAll('li')).forEach((li) => {
+    li.addEventListener('click', async () => {
+      state.filter.area_id = li.dataset.areaId || '';
+      qs('area-filter').value = state.filter.area_id;
+      state.selectedPageId = null;
+      await Promise.all([loadNavPages(), loadPages()]);
+      setBreadcrumb();
+      renderAreaNav();
+    });
+  });
+}
+
+function setBreadcrumb(page = null) {
+  const parts = ['Home'];
+
+  if (state.filter.area_id) {
+    const area = state.areas.find((a) => String(a.id) === String(state.filter.area_id));
+    if (area) parts.push(area.name);
+  } else if (page && page.area_name) {
+    parts.push(page.area_name);
+  }
+
+  if (page) {
+    const map = new Map(state.navPages.map((p) => [p.id, p]));
+    const chain = [];
+    let current = page;
+    const guard = new Set();
+
+    while (current && current.parent_id && map.has(current.parent_id) && !guard.has(current.parent_id)) {
+      guard.add(current.parent_id);
+      const parent = map.get(current.parent_id);
+      chain.unshift(parent.title);
+      current = parent;
+    }
+
+    parts.push(...chain);
+    parts.push(page.title);
+  }
+
+  qs('breadcrumb').textContent = parts.join(' / ');
+}
+
+function populateParentOptions(currentPage = null) {
+  const select = qs('page-parent');
+  const currentId = currentPage ? Number(currentPage.id) : null;
+
+  const childrenMap = new Map();
+  state.navPages.forEach((p) => {
+    if (!childrenMap.has(p.parent_id)) childrenMap.set(p.parent_id, []);
+    childrenMap.get(p.parent_id).push(p.id);
+  });
+
+  const blocked = new Set();
+  if (currentId !== null) {
+    blocked.add(currentId);
+    const stack = [currentId];
+    while (stack.length) {
+      const id = stack.pop();
+      const kids = childrenMap.get(id) || [];
+      kids.forEach((k) => {
+        if (!blocked.has(k)) {
+          blocked.add(k);
+          stack.push(k);
+        }
+      });
+    }
+  }
+
+  const options = ['<option value="">-- Kein Parent --</option>']
+    .concat(
+      state.navPages
+        .filter((p) => !blocked.has(p.id))
+        .map((p) => `<option value="${p.id}">${escapeHtml(p.title)}</option>`)
+    )
+    .join('');
+
+  select.innerHTML = options;
+  select.value = currentPage?.parent_id || '';
 }
 
 async function onSetupSubmit(event) {
@@ -183,7 +338,9 @@ async function onLogout() {
 
 async function loadApp() {
   showApp();
-  await Promise.all([loadAreas(), loadPages(), loadDashboard()]);
+  updateQuickNavButtons();
+  await Promise.all([loadAreas(), loadNavPages(), loadPages(), loadDashboard()]);
+  setBreadcrumb();
 }
 
 async function loadDashboard() {
@@ -202,12 +359,16 @@ async function loadAreas() {
   const areaOptions = ['<option value="">Alle Bereiche</option>']
     .concat(state.areas.map((area) => `<option value="${area.id}">${escapeHtml(area.name)}</option>`))
     .join('');
+
   qs('area-filter').innerHTML = areaOptions;
+  qs('area-filter').value = state.filter.area_id;
 
   const pageAreaOptions = ['<option value="">-- Kein Bereich --</option>']
     .concat(state.areas.map((area) => `<option value="${area.id}">${escapeHtml(area.name)}</option>`))
     .join('');
   qs('page-area').innerHTML = pageAreaOptions;
+
+  renderAreaNav();
 }
 
 function buildPageQuery() {
@@ -224,16 +385,19 @@ async function loadPages() {
   renderPageList();
 
   if (state.selectedPageId) {
-    const stillPresent = state.pages.some((page) => page.id === state.selectedPageId);
+    const stillPresent = state.navPages.some((page) => page.id === state.selectedPageId);
     if (!stillPresent) {
       state.selectedPageId = null;
       qs('page-details').innerHTML = '<p class="muted">Waehle eine Seite aus.</p>';
+      setBreadcrumb();
     }
   }
 }
 
 function renderPageList() {
   const list = qs('page-list');
+  qs('pages-count').textContent = `${state.pages.length} Eintraege`;
+
   if (!state.pages.length) {
     list.innerHTML = '<p class="muted">Keine Seiten gefunden.</p>';
     return;
@@ -256,11 +420,15 @@ function renderPageList() {
 async function selectPage(pageId) {
   state.selectedPageId = pageId;
   renderPageList();
+  renderPageTree();
 
-  const [page, versions] = await Promise.all([
-    request(`/pages/${pageId}`),
-    request(`/pages/${pageId}/versions`),
-  ]);
+  const [page, versions] = await Promise.all([request(`/pages/${pageId}`), request(`/pages/${pageId}/versions`)]);
+
+  setBreadcrumb(page);
+
+  const currentIndex = state.pages.findIndex((entry) => entry.id === pageId);
+  const canPrev = currentIndex > 0;
+  const canNext = currentIndex >= 0 && currentIndex < state.pages.length - 1;
 
   const canEdit = state.user.role === 'admin' || state.user.role === 'editor';
   const canDelete = state.user.role === 'admin';
@@ -271,6 +439,11 @@ async function selectPage(pageId) {
     <p class="meta">Status: ${escapeHtml(page.status)} | Sichtbarkeit: ${page.is_public ? 'public' : 'intern'}</p>
     <p class="meta">Bereich: ${escapeHtml(page.area_name || 'Kein Bereich')}</p>
     <div class="page-body">${page.content}</div>
+
+    <div class="detail-nav">
+      <button id="prev-page-btn" class="ghost" ${canPrev ? '' : 'disabled'}>Vorherige Seite</button>
+      <button id="next-page-btn" class="ghost" ${canNext ? '' : 'disabled'}>Naechste Seite</button>
+    </div>
 
     <div class="actions" style="margin-top: 0.8rem;">
       ${canEdit ? '<button id="edit-page-btn">Bearbeiten</button>' : ''}
@@ -292,6 +465,9 @@ async function selectPage(pageId) {
     </div>
   `;
 
+  if (canPrev) qs('prev-page-btn').addEventListener('click', () => selectPage(state.pages[currentIndex - 1].id));
+  if (canNext) qs('next-page-btn').addEventListener('click', () => selectPage(state.pages[currentIndex + 1].id));
+
   if (canEdit) {
     qs('edit-page-btn').addEventListener('click', () => openPageModal(page));
     Array.from(document.querySelectorAll('.restore-btn')).forEach((button) => {
@@ -299,39 +475,30 @@ async function selectPage(pageId) {
     });
   }
 
-  if (canDelete) {
-    qs('delete-page-btn').addEventListener('click', () => deletePage(page.id));
-  }
+  if (canDelete) qs('delete-page-btn').addEventListener('click', () => deletePage(page.id));
 }
 
 async function restoreVersion(pageId, versionNumber) {
-  if (!confirm(`Version ${versionNumber} wirklich wiederherstellen?`)) {
-    return;
-  }
-
+  if (!confirm(`Version ${versionNumber} wirklich wiederherstellen?`)) return;
   await request(`/pages/${pageId}/restore/${versionNumber}`, { method: 'POST' });
-  await Promise.all([loadPages(), selectPage(pageId), loadDashboard()]);
+  await Promise.all([loadNavPages(), loadPages(), selectPage(pageId), loadDashboard()]);
 }
 
 function deletePage(pageId) {
-  if (!confirm('Seite wirklich loeschen?')) {
-    return;
-  }
+  if (!confirm('Seite wirklich loeschen?')) return;
 
   request(`/pages/${pageId}`, { method: 'DELETE' })
     .then(async () => {
       state.selectedPageId = null;
-      await Promise.all([loadPages(), loadDashboard()]);
+      await Promise.all([loadNavPages(), loadPages(), loadDashboard()]);
       qs('page-details').innerHTML = '<p class="muted">Waehle eine Seite aus.</p>';
+      setBreadcrumb();
     })
     .catch((error) => alert(error.message));
 }
 
 function openPageModal(page = null) {
-  if (state.user.role === 'viewer') {
-    alert('Keine Berechtigung zum Bearbeiten.');
-    return;
-  }
+  if (state.user.role === 'viewer') return alert('Keine Berechtigung zum Bearbeiten.');
 
   qs('page-modal-title').textContent = page ? 'Seite bearbeiten' : 'Neue Seite';
   qs('page-id').value = page ? page.id : '';
@@ -343,13 +510,11 @@ function openPageModal(page = null) {
   qs('page-content').value = page?.content || '';
   qs('page-note').value = '';
   qs('page-area').value = page?.area_id || '';
-
+  populateParentOptions(page);
   qs('page-modal').classList.remove('hidden');
 }
 
-function closePageModal() {
-  qs('page-modal').classList.add('hidden');
-}
+function closePageModal() { qs('page-modal').classList.add('hidden'); }
 
 async function onPageSubmit(event) {
   event.preventDefault();
@@ -360,6 +525,7 @@ async function onPageSubmit(event) {
     slug: qs('page-slug').value.trim(),
     summary: qs('page-summary').value.trim(),
     area_id: qs('page-area').value,
+    parent_id: qs('page-parent').value,
     status: qs('page-status').value,
     is_public: qs('page-public').checked,
     note: qs('page-note').value.trim(),
@@ -368,44 +534,30 @@ async function onPageSubmit(event) {
 
   try {
     if (pageId) {
-      await request(`/pages/${pageId}`, {
-        method: 'PUT',
-        body: JSON.stringify(body),
-      });
+      await request(`/pages/${pageId}`, { method: 'PUT', body: JSON.stringify(body) });
       state.selectedPageId = Number(pageId);
     } else {
-      const created = await request('/pages', {
-        method: 'POST',
-        body: JSON.stringify(body),
-      });
+      const created = await request('/pages', { method: 'POST', body: JSON.stringify(body) });
       state.selectedPageId = created.id;
     }
 
     closePageModal();
-    await Promise.all([loadPages(), loadDashboard()]);
-
-    if (state.selectedPageId) {
-      await selectPage(state.selectedPageId);
-    }
+    await Promise.all([loadNavPages(), loadPages(), loadDashboard()]);
+    if (state.selectedPageId) await selectPage(state.selectedPageId);
   } catch (error) {
     alert(error.message);
   }
 }
 
 function openAreaModal() {
-  if (state.user.role === 'viewer') {
-    alert('Keine Berechtigung zum Erstellen von Bereichen.');
-    return;
-  }
+  if (state.user.role === 'viewer') return alert('Keine Berechtigung zum Erstellen von Bereichen.');
   qs('area-name').value = '';
   qs('area-slug').value = '';
   qs('area-description').value = '';
   qs('area-modal').classList.remove('hidden');
 }
 
-function closeAreaModal() {
-  qs('area-modal').classList.add('hidden');
-}
+function closeAreaModal() { qs('area-modal').classList.add('hidden'); }
 
 async function onAreaSubmit(event) {
   event.preventDefault();
@@ -430,7 +582,11 @@ async function onApplyFilter() {
   state.filter.area_id = qs('area-filter').value;
   state.filter.status = qs('status-filter').value;
   state.selectedPageId = null;
-  await loadPages();
+
+  updateQuickNavButtons();
+  await Promise.all([loadNavPages(), loadPages()]);
+  renderAreaNav();
+  setBreadcrumb();
   qs('page-details').innerHTML = '<p class="muted">Waehle eine Seite aus.</p>';
 }
 
