@@ -3,56 +3,131 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Knowledge Base</title>
+  <title>Knowledge Base Wiki</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <!-- Header-Bereich mit Logo und Navigation -->
-  <header>
-    <div class="logo">Knowledge Base</div>
-    <nav>
-      <ul>
-        <li><a href="#" id="home-link">Home</a></li>
-        <li><a href="#" id="new-page-link">Neue Seite</a></li>
-      </ul>
-    </nav>
-  </header>
-
-  <!-- Container mit Sidebar (Areas) und Hauptinhalt (Pages) -->
-  <div class="container">
-    <aside class="sidebar">
-      <h2>Bereiche</h2>
-      <ul id="area-list">
-        <!-- Dynamisch geladene Areas -->
-      </ul>
-    </aside>
-    <main class="content">
-      <div id="content-area">
-        <!-- Dynamisch geladene Seiten werden hier dargestellt -->
-      </div>
-    </main>
+  <div id="login-view" class="screen">
+    <div class="card login-card">
+      <h1>Knowledge Base Wiki</h1>
+      <p>Bitte einloggen, um Inhalte zu sehen und zu bearbeiten.</p>
+      <form id="login-form">
+        <label for="username">Benutzername</label>
+        <input id="username" name="username" type="text" required value="admin">
+        <label for="password">Passwort</label>
+        <input id="password" name="password" type="password" required value="admin123">
+        <button type="submit">Anmelden</button>
+      </form>
+      <div id="login-error" class="error hidden"></div>
+      <small>Initialer Login: <code>admin / admin123</code></small>
+    </div>
   </div>
 
-  <!-- Modal für das Erstellen/Bearbeiten einer Seite (Beispiel für WYSIWYG-Editor Integration) -->
-  <div id="editor-modal" class="modal hidden">
-    <div class="modal-content">
-      <span id="close-modal" class="close">&times;</span>
-      <h2>Neue Seite erstellen</h2>
-      <form id="page-form">
-        <label for="page-title">Titel:</label>
-        <input type="text" id="page-title" name="title" required>
-        
-        <label for="page-content">Inhalt:</label>
-        <!-- contenteditable-Div als einfacher WYSIWYG-Editor -->
-        <div id="page-content" contenteditable="true" class="editor"></div>
-        
-        <label for="area-select">Bereich:</label>
-        <select id="area-select" name="area_id">
-          <option value="">-- Kein Bereich --</option>
-          <!-- Dynamisch geladene Areas als Auswahloptionen -->
+  <div id="app-view" class="hidden">
+    <header class="topbar">
+      <div>
+        <h1>Knowledge Base Wiki</h1>
+        <p id="welcome-user"></p>
+      </div>
+      <div class="actions">
+        <button id="new-page-btn">Neue Seite</button>
+        <button id="new-area-btn">Neuer Bereich</button>
+        <button id="logout-btn" class="ghost">Logout</button>
+      </div>
+    </header>
+
+    <section id="dashboard" class="dashboard"></section>
+
+    <div class="workspace">
+      <aside class="panel">
+        <h2>Filter</h2>
+        <label for="search-input">Suche</label>
+        <input id="search-input" type="text" placeholder="Titel, Inhalt, Zusammenfassung">
+
+        <label for="area-filter">Bereich</label>
+        <select id="area-filter"></select>
+
+        <label for="status-filter">Status</label>
+        <select id="status-filter">
+          <option value="">Alle</option>
+          <option value="draft">Draft</option>
+          <option value="published">Published</option>
+          <option value="archived">Archived</option>
         </select>
-        
-        <button type="submit">Seite speichern</button>
+
+        <button id="apply-filter-btn">Anwenden</button>
+      </aside>
+
+      <main class="panel main-panel">
+        <h2>Seiten</h2>
+        <div id="page-list" class="page-list"></div>
+      </main>
+
+      <section class="panel detail-panel">
+        <h2>Details</h2>
+        <div id="page-details" class="muted">Wähle eine Seite aus.</div>
+      </section>
+    </div>
+  </div>
+
+  <div id="page-modal" class="modal hidden">
+    <div class="modal-content">
+      <h2 id="page-modal-title">Neue Seite</h2>
+      <form id="page-form">
+        <input type="hidden" id="page-id">
+
+        <label for="page-title">Titel</label>
+        <input id="page-title" type="text" required>
+
+        <label for="page-slug">Slug</label>
+        <input id="page-slug" type="text" placeholder="wird automatisch erzeugt">
+
+        <label for="page-summary">Zusammenfassung</label>
+        <textarea id="page-summary" rows="2"></textarea>
+
+        <label for="page-area">Bereich</label>
+        <select id="page-area"></select>
+
+        <label for="page-status">Status</label>
+        <select id="page-status">
+          <option value="draft">Draft</option>
+          <option value="published">Published</option>
+          <option value="archived">Archived</option>
+        </select>
+
+        <label><input id="page-public" type="checkbox" checked> Oeffentlich sichtbar</label>
+
+        <label for="page-note">Aenderungsnotiz (optional)</label>
+        <input id="page-note" type="text" maxlength="255">
+
+        <label for="page-content">Inhalt (HTML erlaubt)</label>
+        <textarea id="page-content" rows="10" required></textarea>
+
+        <div class="actions">
+          <button type="submit">Speichern</button>
+          <button type="button" id="cancel-page-btn" class="ghost">Abbrechen</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="area-modal" class="modal hidden">
+    <div class="modal-content">
+      <h2>Bereich erstellen</h2>
+      <form id="area-form">
+        <label for="area-name">Name</label>
+        <input id="area-name" type="text" required>
+
+        <label for="area-slug">Slug</label>
+        <input id="area-slug" type="text" placeholder="wird automatisch erzeugt">
+
+        <label for="area-description">Beschreibung</label>
+        <textarea id="area-description" rows="3"></textarea>
+
+        <div class="actions">
+          <button type="submit">Speichern</button>
+          <button type="button" id="cancel-area-btn" class="ghost">Abbrechen</button>
+        </div>
       </form>
     </div>
   </div>

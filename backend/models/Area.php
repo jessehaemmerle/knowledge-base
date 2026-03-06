@@ -1,59 +1,39 @@
 <?php
-// models/Area.php
+
 require_once __DIR__ . '/../db.php';
 
 class Area {
-    public $id;
-    public $name;
-    public $description;
-
-    /**
-     * Gibt alle Areas zurück.
-     *
-     * @return array
-     */
-    public static function getAll() {
+    public static function listAll(): array {
         $db = Database::getInstance()->getConnection();
-        $stmt = $db->query("SELECT * FROM areas");
+        $stmt = $db->query('SELECT id, name, slug, description, created_at, updated_at FROM areas ORDER BY name ASC');
         return $stmt->fetchAll();
     }
 
-    /**
-     * Gibt eine Area anhand ihrer ID zurück.
-     *
-     * @param int $id
-     * @return mixed
-     */
-    public static function getById($id) {
+    public static function getById(int $id): ?array {
         $db = Database::getInstance()->getConnection();
-        $stmt = $db->prepare("SELECT * FROM areas WHERE id = ?");
+        $stmt = $db->prepare('SELECT id, name, slug, description, created_at, updated_at FROM areas WHERE id = ?');
         $stmt->execute([$id]);
-        return $stmt->fetch();
+        $row = $stmt->fetch();
+        return $row ?: null;
     }
 
-    /**
-     * Speichert eine Area – als Insert (wenn neu) oder Update (bei vorhandener ID).
-     */
-    public function save() {
+    public static function create(string $name, string $slug, string $description): array {
         $db = Database::getInstance()->getConnection();
-        if ($this->id) {
-            $stmt = $db->prepare("UPDATE areas SET name = ?, description = ? WHERE id = ?");
-            $stmt->execute([$this->name, $this->description, $this->id]);
-        } else {
-            $stmt = $db->prepare("INSERT INTO areas (name, description) VALUES (?, ?)");
-            $stmt->execute([$this->name, $this->description]);
-            $this->id = $db->lastInsertId();
-        }
+        $stmt = $db->prepare('INSERT INTO areas (name, slug, description) VALUES (?, ?, ?)');
+        $stmt->execute([$name, $slug, $description]);
+        return self::getById((int) $db->lastInsertId());
     }
 
-    /**
-     * Löscht eine Area anhand ihrer ID.
-     *
-     * @param int $id
-     */
-    public static function delete($id) {
+    public static function update(int $id, string $name, string $slug, string $description): ?array {
         $db = Database::getInstance()->getConnection();
-        $stmt = $db->prepare("DELETE FROM areas WHERE id = ?");
+        $stmt = $db->prepare('UPDATE areas SET name = ?, slug = ?, description = ? WHERE id = ?');
+        $stmt->execute([$name, $slug, $description, $id]);
+        return self::getById($id);
+    }
+
+    public static function delete(int $id): void {
+        $db = Database::getInstance()->getConnection();
+        $stmt = $db->prepare('DELETE FROM areas WHERE id = ?');
         $stmt->execute([$id]);
     }
 }

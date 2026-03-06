@@ -1,89 +1,83 @@
 <?php
-// controllers/AreasController.php
+
+require_once __DIR__ . '/../core/Auth.php';
+require_once __DIR__ . '/../core/Request.php';
+require_once __DIR__ . '/../core/Response.php';
+require_once __DIR__ . '/../core/Util.php';
 require_once __DIR__ . '/../models/Area.php';
 
 class AreasController {
-    /**
-     * GET /api/areas – Gibt alle Areas zurück.
-     */
-    public function listAreas() {
-        $areas = Area::getAll();
-        header('Content-Type: application/json');
-        echo json_encode($areas);
+    public function listAreas(): void {
+        Auth::requireUser();
+        Response::json(Area::listAll());
     }
 
-    /**
-     * GET /api/areas/{id} – Gibt eine einzelne Area zurück.
-     *
-     * @param int $id
-     */
-    public function getArea($id) {
-        $area = Area::getById($id);
-        if ($area) {
-            header('Content-Type: application/json');
-            echo json_encode($area);
-        } else {
-            header("HTTP/1.1 404 Not Found");
-            echo json_encode(["error" => "Area not found"]);
-        }
-    }
-
-    /**
-     * POST /api/areas – Erstellt eine neue Area.
-     */
-    public function createArea() {
-        $data = json_decode(file_get_contents("php://input"), true);
-        if (!isset($data['name'])) {
-            header("HTTP/1.1 400 Bad Request");
-            echo json_encode(["error" => "Name is required"]);
+    public function getArea(string $id): void {
+        Auth::requireUser();
+        $area = Area::getById((int) $id);
+        if ($area === null) {
+            Response::json(['error' => 'Bereich nicht gefunden.'], 404);
             return;
         }
-        $area = new Area();
-        $area->name = $data['name'];
-        $area->description = $data['description'] ?? '';
-        $area->save();
-
-        header('Content-Type: application/json');
-        echo json_encode($area);
+        Response::json($area);
     }
 
-    /**
-     * PUT /api/areas/{id} – Aktualisiert eine bestehende Area.
-     *
-     * @param int $id
-     */
-    public function updateArea($id) {
-        $data = json_decode(file_get_contents("php://input"), true);
-        $existing = Area::getById($id);
-        if (!$existing) {
-            header("HTTP/1.1 404 Not Found");
-            echo json_encode(["error" => "Area not found"]);
+    public function createArea(): void {
+        Auth::requireRole(['admin', 'editor']);
+        $data = Request::json();
+
+        $name = trim((string) ($data['name'] ?? ''));
+        if ($name === '') {
+            Response::json(['error' => 'Name ist erforderlich.'], 400);
             return;
         }
-        $area = new Area();
-        $area->id = $id;
-        $area->name = $data['name'] ?? $existing['name'];
-        $area->description = $data['description'] ?? $existing['description'];
-        $area->save();
 
-        header('Content-Type: application/json');
-        echo json_encode($area);
+        $slug = trim((string) ($data['slug'] ?? ''));
+        if ($slug === '') {
+            $slug = Util::slugify($name);
+        }
+        $description = trim((string) ($data['description'] ?? ''));
+
+        try {
+            $area = Area::create($name, $slug, $description);
+            Response::json($area, 201);
+        } catch (PDOException $e) {
+            Response::json(['error' => 'Bereich konnte nicht erstellt werden (Slug evtl. bereits vorhanden).'], 409);
+        }
     }
 
-    /**
-     * DELETE /api/areas/{id} – Löscht eine Area.
-     *
-     * @param int $id
-     */
-    public function deleteArea($id) {
-        $existing = Area::getById($id);
-        if (!$existing) {
-            header("HTTP/1.1 404 Not Found");
-            echo json_encode(["error" => "Area not found"]);
+    public function updateArea(string $id): void {
+        Auth::requireRole(['admin', 'editor']);
+        $existing = Area::getById((int) $id);
+        if ($existing === null) {
+            Response::json(['error' => 'Bereich nicht gefunden.'], 404);
             return;
         }
-        Area::delete($id);
-        header('Content-Type: application/json');
-        echo json_encode(["message" => "Area deleted successfully"]);
+
+        $data = Request::json();
+        $name = trim((string) ($data['name'] ?? $existing['name']));
+        $slug = trim((string) ($data['slug'] ?? $existing['slug']));
+        $description = trim((string) ($data['description'] ?? $existing['description']));
+        if ($slug === '') {
+            $slug = Util::slugify($name);
+        }
+
+        try {
+            $area = Area::update((int) $id, $name, $slug, $description);
+            Response::json($area ?? ['error' => 'Bereich nicht gefunden.'], $area ? 200 : 404);
+        } catch (PDOException $e) {
+            Response::json(['error' => 'Bereich konnte nicht aktualisiert werden (Slug evtl. bereits vorhanden).'], 409);
+        }
+    }
+
+    public function deleteArea(string $id): void {
+        Auth::requireRole(['admin']);
+        $existing = Area::getById((int) $id);
+        if ($existing === null) {
+            Response::json(['error' => 'Bereich nicht gefunden.'], 404);
+            return;
+        }
+        Area::delete((int) $id);
+        Response::noContent();
     }
 }

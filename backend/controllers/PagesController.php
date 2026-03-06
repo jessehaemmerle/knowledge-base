@@ -1,48 +1,129 @@
 <?php
-// controllers/PagesController.php
+
+require_once __DIR__ . '/../core/Auth.php';
+require_once __DIR__ . '/../core/Request.php';
+require_once __DIR__ . '/../core/Response.php';
+require_once __DIR__ . '/../core/Util.php';
 require_once __DIR__ . '/../models/Page.php';
 require_once __DIR__ . '/../models/PageVersion.php';
 
 class PagesController {
-    /**
-     * GET /api/pages – Liste aller Seiten
-     */
-    public function listPages() {
-        $pages = Page::getAll();
-        header('Content-Type: application/json');
-        echo json_encode($pages);
+    public function listPages(): void {
+        $user = Auth::requireUser();
+
+        $filters = [
+            'area_id' => Request::query('area_id'),
+            'status' => Request::query('status'),
+            'q' => Request::query('q'),
+        ];
+
+        Response::json(Page::list($filters, $user));
     }
 
-    /**
-     * POST /api/pages – Erstellen einer neuen Seite (erstellt gleichzeitig einen Versionsdatensatz)
-     */
-    public function createPage() {
-        $data = json_decode(file_get_contents("php://input"), true);
-        if (!isset($data['title']) || !isset($data['content'])) {
-            header("HTTP/1.1 400 Bad Request");
-            echo json_encode(["error" => "Title and content are required"]);
+    public function getPage(string $id): void {
+        $user = Auth::requireUser();
+        $page = Page::getById((int) $id, $user);
+        if ($page === null) {
+            Response::json(['error' => 'Seite nicht gefunden.'], 404);
             return;
         }
-        $page = new Page();
-        $page->title     = $data['title'];
-        $page->content   = $data['content'];
-        $page->parent_id = $data['parent_id'] ?? null;
-        $page->area_id   = $data['area_id'] ?? null;
-        $page->is_public = $data['is_public'] ?? true;
-        $page->save();
-
-        header('Content-Type: application/json');
-        echo json_encode($page);
+        Response::json($page);
     }
 
-    /**
-     * GET /api/pages/{id}/versions – Gibt alle Versionen einer Seite zurück
-     *
-     * @param int $id
-     */
-    public function listPageVersions($id) {
-        $versions = PageVersion::getVersions($id);
-        header('Content-Type: application/json');
-        echo json_encode($versions);
+    public function createPage(): void {
+        $user = Auth::requireRole(['admin', 'editor']);
+        $data = Request::json();
+        $payload = $this->buildPayload($data);
+        if (isset($payload['error'])) {
+            Response::json(['error' => $payload['error']], 400);
+            return;
+        }
+
+        try {
+            $page = Page::create($payload, (int) $user['id']);
+            Response::json($page, 201);
+        } catch (PDOException $e) {
+            Response::json(['error' => 'Seite konnte nicht erstellt werden (Slug evtl. bereits vorhanden).'], 409);
+        }
+    }
+
+    public function updatePage(string $id): void {
+        $user = Auth::requireRole(['admin', 'editor']);
+        $data = Request::json();
+        $payload = $this->buildPayload($data);
+        if (isset($payload['error'])) {
+            Response::json(['error' => $payload['error']], 400);
+            return;
+        }
+
+        try {
+            $page = Page::update((int) $id, $payload, (int) $user['id']);
+            if ($page === null) {
+                Response::json(['error' => 'Seite nicht gefunden.'], 404);
+                return;
+            }
+            Response::json($page);
+        } catch (PDOException $e) {
+            Response::json(['error' => 'Seite konnte nicht aktualisiert werden (Slug evtl. bereits vorhanden).'], 409);
+        }
+    }
+
+    public function deletePage(string $id): void {
+        Auth::requireRole(['admin']);
+        $deleted = Page::delete((int) $id);
+        if (!$deleted) {
+            Response::json(['error' => 'Seite nicht gefunden.'], 404);
+            return;
+        }
+        Response::noContent();
+    }
+
+    public function listPageVersions(string $id): void {
+        Auth::requireUser();
+        Response::json(PageVersion::listByPage((int) $id));
+    }
+
+    public function restorePageVersion(string $id, string $versionNumber): void {
+        $user = Auth::requireRole(['admin', 'editor']);
+        $page = Page::restoreVersion((int) $id, (int) $versionNumber, (int) $user['id']);
+        if ($page === null) {
+            Response::json(['error' => 'Seite oder Version nicht gefunden.'], 404);
+            return;
+        }
+        Response::json($page);
+    }
+
+    private function buildPayload(array $data): array {
+        $title = trim((string) ($data['title'] ?? ''));
+        if ($title === '') {
+            return ['error' => 'Titel ist erforderlich.'];
+        }
+
+        $content = trim((string) ($data['content'] ?? ''));
+        if ($content === '') {
+            return ['error' => 'Inhalt ist erforderlich.'];
+        }
+
+        $slug = trim((string) ($data['slug'] ?? ''));
+        if ($slug === '') {
+            $slug = Util::slugify($title);
+        }
+
+        $status = (string) ($data['status'] ?? 'published');
+        if (!in_array($status, ['draft', 'published', 'archived'], true)) {
+            return ['error' => 'Ungueltiger Status.'];
+        }
+
+        return [
+            'area_id' => isset($data['area_id']) && $data['area_id'] !== '' ? (int) $data['area_id'] : null,
+            'parent_id' => isset($data['parent_id']) && $data['parent_id'] !== '' ? (int) $data['parent_id'] : null,
+            'title' => $title,
+            'slug' => $slug,
+            'content' => Util::sanitizeHtml($content),
+            'summary' => trim((string) ($data['summary'] ?? '')),
+            'status' => $status,
+            'is_public' => !empty($data['is_public']) ? 1 : 0,
+            'note' => trim((string) ($data['note'] ?? '')),
+        ];
     }
 }
