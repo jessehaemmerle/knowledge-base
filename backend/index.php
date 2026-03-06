@@ -9,6 +9,9 @@ session_start();
 
 $router = new Router();
 
+$router->add('GET', '/api/setup/status', 'SetupController@status');
+$router->add('POST', '/api/setup/initialize', 'SetupController@initialize');
+
 $router->add('POST', '/api/auth/login', 'AuthController@login');
 $router->add('GET', '/api/auth/me', 'AuthController@me');
 $router->add('POST', '/api/auth/logout', 'AuthController@logout');

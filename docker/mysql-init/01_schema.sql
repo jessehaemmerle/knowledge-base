@@ -61,31 +61,3 @@ CREATE TABLE IF NOT EXISTS page_versions (
   CONSTRAINT fk_versions_user FOREIGN KEY (edited_by) REFERENCES users(id),
   INDEX idx_versions_page_date (page_id, edited_at)
 );
-
-INSERT INTO users (username, display_name, password_hash, password_salt, password_iterations, role)
-SELECT 'admin', 'Administrator',
-'883971ad963d7868b1cc841d5611faa51a97267e900cccb9746015df54ff1fef',
-'89702074e816fec6b9c85a16190a5bf2',
-200000,
-'admin'
-WHERE NOT EXISTS (SELECT 1 FROM users WHERE username = 'admin');
-
-INSERT INTO areas (name, slug, description)
-SELECT 'Allgemein', 'allgemein', 'Zentraler Bereich fuer Startinhalte'
-WHERE NOT EXISTS (SELECT 1 FROM areas WHERE slug = 'allgemein');
-
-INSERT INTO pages (area_id, parent_id, title, slug, content, summary, status, is_public, created_by, updated_by)
-SELECT a.id, NULL, 'Willkommen im Wiki', 'willkommen-im-wiki',
-'<h2>Willkommen</h2><p>Dies ist die Startseite des Wissensportals.</p><p>Logge dich ein und beginne mit dem Aufbau eurer Wissensdatenbank.</p>',
-'Startseite des Wikis', 'published', 1, u.id, u.id
-FROM areas a
-JOIN users u ON u.username = 'admin'
-WHERE a.slug = 'allgemein'
-AND NOT EXISTS (SELECT 1 FROM pages WHERE slug = 'willkommen-im-wiki');
-
-INSERT INTO page_versions (page_id, version_number, title, content, summary, status, edited_by, note)
-SELECT p.id, 1, p.title, p.content, p.summary, p.status, u.id, 'Initiale Version'
-FROM pages p
-JOIN users u ON u.username = 'admin'
-WHERE p.slug = 'willkommen-im-wiki'
-AND NOT EXISTS (SELECT 1 FROM page_versions WHERE page_id = p.id AND version_number = 1);

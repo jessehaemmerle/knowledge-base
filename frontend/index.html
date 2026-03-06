@@ -7,19 +7,41 @@
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <div id="login-view" class="screen">
+  <div id="setup-view" class="screen hidden">
+    <div class="card login-card">
+      <h1>Initiales Setup</h1>
+      <p>Lege den ersten Administrator-Benutzer fuer das Wiki an.</p>
+      <form id="setup-form">
+        <label for="setup-display-name">Anzeigename</label>
+        <input id="setup-display-name" type="text" required>
+
+        <label for="setup-username">Benutzername</label>
+        <input id="setup-username" type="text" required>
+
+        <label for="setup-password">Passwort</label>
+        <input id="setup-password" type="password" required minlength="8">
+
+        <label for="setup-password-confirm">Passwort bestaetigen</label>
+        <input id="setup-password-confirm" type="password" required minlength="8">
+
+        <button type="submit">Setup abschliessen</button>
+      </form>
+      <div id="setup-error" class="error hidden"></div>
+    </div>
+  </div>
+
+  <div id="login-view" class="screen hidden">
     <div class="card login-card">
       <h1>Knowledge Base Wiki</h1>
       <p>Bitte einloggen, um Inhalte zu sehen und zu bearbeiten.</p>
       <form id="login-form">
         <label for="username">Benutzername</label>
-        <input id="username" name="username" type="text" required value="admin">
+        <input id="username" name="username" type="text" required>
         <label for="password">Passwort</label>
-        <input id="password" name="password" type="password" required value="admin123">
+        <input id="password" name="password" type="password" required>
         <button type="submit">Anmelden</button>
       </form>
       <div id="login-error" class="error hidden"></div>
-      <small>Initialer Login: <code>admin / admin123</code></small>
     </div>
   </div>
 
@@ -65,7 +87,7 @@
 
       <section class="panel detail-panel">
         <h2>Details</h2>
-        <div id="page-details" class="muted">Wähle eine Seite aus.</div>
+        <div id="page-details" class="muted">Waehle eine Seite aus.</div>
       </section>
     </div>
   </div>

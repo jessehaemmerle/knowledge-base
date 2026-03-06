@@ -6,6 +6,11 @@ require_once __DIR__ . '/../models/User.php';
 
 class AuthController {
     public function login(): void {
+        if (User::countAll() === 0) {
+            Response::json(['error' => 'Setup erforderlich. Bitte zuerst den ersten Benutzer anlegen.'], 409);
+            return;
+        }
+
         $data = Request::json();
         $username = trim((string) ($data['username'] ?? ''));
         $password = (string) ($data['password'] ?? '');

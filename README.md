@@ -1,6 +1,7 @@
 # Knowledge Base Wiki (Dockerized)
 
 Vollstaendige Wiki-Loesung mit:
+- Initialem Setup (ersten Admin selbst anlegen)
 - Login und Rollen (`admin`, `editor`, `viewer`)
 - Bereichsverwaltung (`areas`)
 - Seitenverwaltung mit Status (`draft`, `published`, `archived`)
@@ -25,16 +26,18 @@ Danach:
 - App: http://localhost:8080
 - API: `http://localhost:8080/api/...`
 
-Initialer Zugang:
-- Benutzer: `admin`
-- Passwort: `admin123`
+## Erster Start (Setup)
+Beim ersten Aufruf erscheint ein Setup-Screen.
+Dort legst du den ersten Benutzer an. Dieser wird automatisch `admin`.
 
 ## Services
 - `web` (nginx): liefert Frontend und routed `/api/*` an PHP
 - `php` (php-fpm): API-Backend
-- `db` (mariadb): persistente Datenbank inkl. Seed-Daten
+- `db` (mariadb): persistente Datenbank
 
 ## Wichtige Endpunkte
+- `GET /api/setup/status`
+- `POST /api/setup/initialize`
 - `POST /api/auth/login`
 - `GET /api/auth/me`
 - `POST /api/auth/logout`

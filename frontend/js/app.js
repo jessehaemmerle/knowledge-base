@@ -64,6 +64,12 @@ async function boot() {
   bindEvents();
 
   try {
+    const setup = await request('/setup/status');
+    if (setup.setup_required) {
+      showSetup();
+      return;
+    }
+
     const me = await request('/auth/me');
     if (me.user) {
       state.user = me.user;
@@ -76,18 +82,27 @@ async function boot() {
   }
 }
 
+function showSetup() {
+  setVisible('setup-view', true);
+  setVisible('login-view', false);
+  setVisible('app-view', false);
+}
+
 function showLogin() {
+  setVisible('setup-view', false);
   setVisible('login-view', true);
   setVisible('app-view', false);
 }
 
 function showApp() {
+  setVisible('setup-view', false);
   setVisible('login-view', false);
   setVisible('app-view', true);
   qs('welcome-user').textContent = `Angemeldet als ${state.user.display_name} (${state.user.role})`;
 }
 
 function bindEvents() {
+  qs('setup-form').addEventListener('submit', onSetupSubmit);
   qs('login-form').addEventListener('submit', onLogin);
   qs('logout-btn').addEventListener('click', onLogout);
 
@@ -105,6 +120,37 @@ function bindEvents() {
       onApplyFilter();
     }
   });
+}
+
+async function onSetupSubmit(event) {
+  event.preventDefault();
+  const errorBox = qs('setup-error');
+  errorBox.classList.add('hidden');
+
+  const password = qs('setup-password').value;
+  const passwordConfirm = qs('setup-password-confirm').value;
+  if (password !== passwordConfirm) {
+    errorBox.textContent = 'Passwoerter stimmen nicht ueberein.';
+    errorBox.classList.remove('hidden');
+    return;
+  }
+
+  try {
+    const payload = await request('/setup/initialize', {
+      method: 'POST',
+      body: JSON.stringify({
+        display_name: qs('setup-display-name').value.trim(),
+        username: qs('setup-username').value.trim(),
+        password,
+      }),
+    });
+
+    state.user = payload.user;
+    await loadApp();
+  } catch (error) {
+    errorBox.textContent = error.message;
+    errorBox.classList.remove('hidden');
+  }
 }
 
 async function onLogin(event) {
@@ -181,7 +227,7 @@ async function loadPages() {
     const stillPresent = state.pages.some((page) => page.id === state.selectedPageId);
     if (!stillPresent) {
       state.selectedPageId = null;
-      qs('page-details').innerHTML = '<p class="muted">Wähle eine Seite aus.</p>';
+      qs('page-details').innerHTML = '<p class="muted">Waehle eine Seite aus.</p>';
     }
   }
 }
@@ -276,7 +322,7 @@ function deletePage(pageId) {
     .then(async () => {
       state.selectedPageId = null;
       await Promise.all([loadPages(), loadDashboard()]);
-      qs('page-details').innerHTML = '<p class="muted">Wähle eine Seite aus.</p>';
+      qs('page-details').innerHTML = '<p class="muted">Waehle eine Seite aus.</p>';
     })
     .catch((error) => alert(error.message));
 }
@@ -385,7 +431,7 @@ async function onApplyFilter() {
   state.filter.status = qs('status-filter').value;
   state.selectedPageId = null;
   await loadPages();
-  qs('page-details').innerHTML = '<p class="muted">Wähle eine Seite aus.</p>';
+  qs('page-details').innerHTML = '<p class="muted">Waehle eine Seite aus.</p>';
 }
 
 document.addEventListener('DOMContentLoaded', boot);
