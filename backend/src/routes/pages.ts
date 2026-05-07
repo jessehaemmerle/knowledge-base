@@ -48,10 +48,11 @@ pagesRouter.post("/", requireRole("admin", "editor"), (req, res) => {
     INSERT INTO pages (title, slug, file_path, description, status, visibility, tags, created_by, updated_by, created_at, updated_at)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(parsed.data.title, slug, file.relative, parsed.data.description, parsed.data.status, parsed.data.visibility, JSON.stringify(parsed.data.tags), req.user!.id, req.user!.id, time, time);
+  const pageId = Number(result.lastInsertRowid);
   const versionPath = createVersion(slug, parsed.data.content);
   db.prepare("INSERT INTO page_versions (page_id, version_file_path, created_by, change_note, created_at) VALUES (?, ?, ?, ?, ?)")
-    .run(result.lastInsertRowid, versionPath, req.user!.id, parsed.data.changeNote ?? "Erstellt", time);
-  audit(req.user!.id, "page_created", "page", result.lastInsertRowid, { slug });
+    .run(pageId, versionPath, req.user!.id, parsed.data.changeNote ?? "Erstellt", time);
+  audit(req.user!.id, "page_created", "page", pageId, { slug });
   res.status(201).json({ slug });
 });
 

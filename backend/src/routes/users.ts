@@ -29,8 +29,9 @@ usersRouter.post("/", (req, res) => {
     INSERT INTO users (email, name, password_hash, role, active, created_at, updated_at)
     VALUES (?, ?, ?, ?, ?, ?, ?)
   `).run(parsed.data.email, parsed.data.name, bcrypt.hashSync(parsed.data.password, 12), parsed.data.role, parsed.data.active === false ? 0 : 1, time, time);
-  audit(req.user!.id, "user_created", "user", result.lastInsertRowid, { email: parsed.data.email });
-  res.status(201).json({ id: result.lastInsertRowid });
+  const id = Number(result.lastInsertRowid);
+  audit(req.user!.id, "user_created", "user", id, { email: parsed.data.email });
+  res.status(201).json({ id });
 });
 
 usersRouter.get("/:id", (req, res) => {

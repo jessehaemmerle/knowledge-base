@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
+import type { JwtPayload } from "jsonwebtoken";
 import { config } from "../config.js";
 import { db } from "../db/database.js";
 
@@ -23,8 +24,11 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
   const token = header?.startsWith("Bearer ") ? header.slice(7) : undefined;
   if (!token) return res.status(401).json({ message: "Nicht angemeldet" });
   try {
-    const payload = jwt.verify(token, config.jwtSecret) as { sub: number };
-    const user = db.prepare("SELECT id, email, name, role, active FROM users WHERE id=?").get(payload.sub) as AuthUser | undefined;
+    const payload: string | JwtPayload = jwt.verify(token, config.jwtSecret);
+    if (typeof payload === "string") return res.status(401).json({ message: "Session ist ungueltig" });
+    const userId = Number(payload.sub);
+    if (!Number.isInteger(userId)) return res.status(401).json({ message: "Session ist ungueltig" });
+    const user = db.prepare("SELECT id, email, name, role, active FROM users WHERE id=?").get(userId) as AuthUser | undefined;
     if (!user || !user.active) return res.status(401).json({ message: "Benutzer ist nicht aktiv" });
     req.user = user;
     next();

@@ -39,8 +39,9 @@ menuRouter.post("/", requireRole("admin", "editor"), (req, res) => {
     INSERT INTO menu_items (parent_id, type, title, page_id, external_url, icon, sort_order, created_at, updated_at)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(parsed.data.parent_id ?? null, parsed.data.type, parsed.data.title, parsed.data.page_id ?? null, parsed.data.external_url ?? null, parsed.data.icon ?? null, parsed.data.sort_order ?? 0, time, time);
-  audit(req.user!.id, "menu_changed", "menu_item", result.lastInsertRowid);
-  res.status(201).json({ id: result.lastInsertRowid });
+  const id = Number(result.lastInsertRowid);
+  audit(req.user!.id, "menu_changed", "menu_item", id);
+  res.status(201).json({ id });
 });
 
 menuRouter.patch("/:id", requireRole("admin", "editor"), (req, res) => {
