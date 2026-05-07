@@ -1,0 +1,61 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+.dark {
+  color-scheme: dark;
+}
+
+body {
+  @apply min-h-screen bg-slate-50 text-slate-950 antialiased dark:bg-slate-950 dark:text-slate-100;
+}
+
+::selection {
+  background: #246b6830;
+}
+
+.glass {
+  @apply border border-white/70 bg-white/85 shadow-soft backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/80;
+}
+
+.prose-wiki {
+  @apply text-[1.02rem] leading-8 text-slate-700 dark:text-slate-200;
+}
+
+.prose-wiki h1 {
+  @apply mb-5 mt-8 text-4xl font-extrabold leading-tight text-slate-950 dark:text-white;
+}
+
+.prose-wiki h2 {
+  @apply mb-3 mt-8 text-2xl font-bold text-slate-900 dark:text-slate-50;
+}
+
+.prose-wiki h3 {
+  @apply mb-2 mt-6 text-xl font-semibold text-slate-900 dark:text-slate-100;
+}
+
+.prose-wiki a {
+  @apply font-medium text-brand underline decoration-brand/30 underline-offset-4 hover:decoration-brand;
+}
+
+.prose-wiki pre {
+  @apply overflow-x-auto rounded-lg bg-slate-950 p-4 text-sm text-slate-50;
+}
+
+.prose-wiki code {
+  @apply rounded bg-slate-100 px-1.5 py-0.5 text-sm text-slate-900 dark:bg-slate-800 dark:text-slate-100;
+}
+
+.prose-wiki blockquote {
+  @apply border-l-4 border-brand/40 pl-4 text-slate-600 dark:text-slate-300;
+}
+
+.toastui-editor-defaultUI {
+  border-radius: 16px;
+  overflow: hidden;
+  border-color: rgb(226 232 240) !important;
+}

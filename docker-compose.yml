@@ -1,0 +1,16 @@
+services:
+  wiki:
+    build: .
+    container_name: modern-markdown-wiki
+    ports:
+      - "8080:8080"
+    environment:
+      NODE_ENV: production
+      APP_URL: http://localhost:8080
+      ADMIN_EMAIL: admin@example.local
+      ADMIN_PASSWORD: ChangeMe123!
+      JWT_SECRET: change-this-secret
+      DATA_DIR: /data
+    volumes:
+      - ./data:/data
+    restart: unless-stopped
