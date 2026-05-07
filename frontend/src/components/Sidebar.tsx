@@ -8,7 +8,8 @@ import { useAuthStore } from "../store/auth";
 function TreeItem({ item, depth = 0 }: { item: MenuItem; depth?: number }) {
   const [open, setOpen] = useState(true);
   const location = useLocation();
-  const active = item.slug && location.pathname === `/wiki/${item.slug}`;
+  const active = typeof item.slug === "string" && location.pathname === `/wiki/${item.slug}`;
+  const externalUrl = item.external_url ?? "#";
   const content = (
     <div className={cn("group flex h-9 items-center gap-2 rounded-lg px-2 text-sm transition hover:bg-slate-100 dark:hover:bg-slate-800", active && "bg-brand-soft font-semibold text-brand dark:bg-brand/20 dark:text-teal-200")} style={{ paddingLeft: 8 + depth * 14 }}>
       {item.type === "folder" ? <Folder className="h-4 w-4 text-slate-400" /> : <FileText className="h-4 w-4 text-slate-400" />}
@@ -19,7 +20,7 @@ function TreeItem({ item, depth = 0 }: { item: MenuItem; depth?: number }) {
 
   return (
     <div>
-      {item.type === "folder" ? <button className="w-full text-left" onClick={() => setOpen(!open)}>{content}</button> : item.type === "external" ? <a href={item.external_url} target="_blank" rel="noreferrer">{content}</a> : <Link to={`/wiki/${item.slug}`}>{content}</Link>}
+      {item.type === "folder" ? <button className="w-full text-left" onClick={() => setOpen(!open)}>{content}</button> : item.type === "external" ? <a href={externalUrl} target="_blank" rel="noreferrer">{content}</a> : item.slug ? <Link to={`/wiki/${item.slug}`}>{content}</Link> : content}
       {open && item.children?.map((child) => <TreeItem key={child.id} item={child} depth={depth + 1} />)}
     </div>
   );

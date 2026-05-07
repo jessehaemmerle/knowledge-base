@@ -19,11 +19,12 @@ export type PageMeta = {
 export type MenuItem = {
   id: number;
   parent_id: number | null;
+  page_id?: number | null;
   type: "folder" | "page" | "external";
   title: string;
-  slug?: string;
-  external_url?: string;
-  icon?: string;
+  slug?: string | null;
+  external_url?: string | null;
+  icon?: string | null;
   children: MenuItem[];
 };
 
